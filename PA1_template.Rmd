@@ -1,0 +1,176 @@
+----------------------------------------------------------------------------------------------------
+
+# Reproducible Research - Peer Assessment 1
+----------------------------------------------------------------------------------------------------
+**Data source:  Activity monitoring data**  
+The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.  
+----------------------------------------------------------------------------------------------------
+
+**Part 1 Loading and preprocessing the data**  
+
+a) Load data to R by unzipping the zip file from a url.  
+Use setInternet2 function since there is problem withexecuting download.file in rmarkdown.  
+
+```{r, echo=TRUE}
+setInternet2(use = TRUE)
+temp <- tempfile()
+url<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(url, temp, mode="wb")
+unzip(temp, "activity.csv")
+activ <- read.table("activity.csv", sep=",", header=T)
+unlink(temp)
+```
+
+b) Check the struture of the 'activ' dataset to check variable attributes.  
+Also check the first anad last few observations of the data and number of missing data.  
+```{r, echo=TRUE}
+str(activ)
+head(activ)
+tail(activ)
+colSums(is.na(activ))
+```
+-----------------------------------------------------------------------------------------------------
+
+**Part 2 What is the mean total number of steps taken per day?**  
+
+a) Calculate the sum of steps taken per day by using date as a factor 
+```{r, echo=TRUE}
+total<-tapply(activ$steps, activ$date,sum,  na.rm = TRUE)
+head(total)
+tail(total)
+```
+
+b) Make a histogram of the total number of steps taken each day
+```{r, echo=TRUE}
+hist(total, main="Histogram of total steps", xlab="Total per day")
+```
+
+c) Look at the six-point summary statistics of the 'total' vector
+```{r}
+summary(total)
+```
+The mean number of steps taken per day is equivalent to **9,350**  
+The median number of steps taken per day is equivalent to **10,400**
+
+----------------------------------------------------------------------------------------------------  
+
+**Part 3 What is the average daily activity pattern?**  
+
+a) convert 'interval' vector into a factor variable, and calculate the average number of steps taken during the same 5 min interval of the day for the period (2 months). There are 288 intervals per day.  The average will be the y-axis in the graph.  
+```{r,echo=TRUE}
+activ$interval2 <- as.factor(activ$interval)
+str(activ)
+stepsinter <- tapply(activ$steps, activ$interval2, mean,  na.rm = TRUE) 
+
+```
+
+b) create a time variable, i.e., sequence of 5 minute in a 24 hour clock starting from 00:00:00.  The time sequence will be the x-axis in the graph.
+```{r,echo=TRUE}
+timeinterval<-seq(c(ISOdatetime(2012,10,1, 0, 0, 0)), by = "5 mins", length.out = 288)
+head(timeinterval)
+tail(timeinterval)
+```
+
+c) create a new dataframe called the 'averagesteps'for the graph, and plot the time-series graph for average daily activity patten.
+```{r, echo=TRUE}
+data<- data.frame(timeinterval, stepsinter)
+head(data)
+tail(data)
+plot(data$timeinterval, data$stepsinter, type="l", main="Daily Activity Pattern on Average", xlab="day-time")
+data[data[,2]==max(data[,2]),]
+```
+
+The 5-minute interval that on average, contains the maximum number of steps is 8:35 am.
+
+----------------------------------------------------------------------------------------------------
+
+**Part 4 Imputing missing values**
+
+a) check for missing values in the dataset
+```{r, echo=TRUE}
+d<-activ[!complete.cases(activ),]
+nrow(d) ## number of incomplete recordings
+colSums(is.na(activ))# number of missing
+```
+
+b) create identical dataset, 'activ2', and impute mean steps per interval observed across all days, for each missing value.
+```{r, echo=TRUE}
+activ2<-activ
+
+library(plyr)
+impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+activ2 <- ddply(activ2, ~ interval, transform, steps = impute.mean(steps))
+summary (activ)
+summary(activ2)
+
+```
+
+c) calculate total steps taken per day from the imputed dataset, and compare the distribution through histogram and summary statistics.
+```{r, echo=TRUE}
+total2<-tapply(activ2$steps, activ2$date,sum,  na.rm = TRUE)
+par(mfrow= c(1,2), mar=c(4,4,2,1))
+hist(total, main="Histogram of total steps (with missing values)", xlab="Total per day", cex.main=0.70)
+hist(total2, main="Histogram of total steps (missing values imputed)", xlab="Total per day", cex.main=0.70)
+
+summary(total)
+summary(total2)
+```
+
+This analysis revealed that that imputation of missing values lead to a shift in the disrubution to the right, i.e. the distribution of total daily steps went from  a right-skewed distribution to a normal distribution, where mean=median.  The average and median total steps were estimated at 10,800 post-imputation, compared with 9,350 and 10,400,respectivly, pre-imputation.  Therefore, imputation of missing values lead to an increase in the mean/median estimates of total daily steps; however the significance of this increase is yet to be determined.  The minimum total daily steps also increased from 0 to 40 following imputation; as did 25th percent quartile, which increased from 6,780 to 9,820.
+
+----------------------------------------------------------------------------------------------------
+
+**Part 5 Are there differences in activity patterns between weekdays and weekends?**
+
+a) create weekday variable in the 'activ2' dataset, and then a "weekend" factor variable with 2 levels.
+```{r, echo=TRUE}
+activ2$weekday <- weekdays(as.Date(as.character(activ2$date),"%Y-%m-%d"))
+head(activ2)
+tail(activ2)
+str(activ2)
+
+activ2$weekend <- ifelse(activ2$weekday=="Sunday"|activ2$weekday=="Saturday", "Weekend", "Weekday")
+head(activ2)
+tail(activ2)
+str(activ2)
+```
+
+b) create two datasets based on whether the day is  a weekday or weekend .
+```{r, echo=TRUE}
+
+activ2wd<-subset(activ2, activ2$weekend=="Weekday")
+activ2we<-subset(activ2, activ2$weekend=="Weekend")
+head(activ2wd)
+tail(activ2wd)
+head(activ2we)
+tail(activ2we)
+```
+
+
+c) create 2 differnt vectors, 'stepsinterwd' and 'stepsinterwe' which contain the average steps taken per interval across all days.
+```{r, echo=TRUE}
+
+activ2wd$interval2 <- as.factor(activ2wd$interval)
+str(activ2wd)
+stepsinterwd <- tapply(activ2wd$steps, activ2wd$interval2, mean,  na.rm = TRUE) 
+
+activ2we$interval2 <- as.factor(activ2we$interval)
+str(activ2we)
+stepsinterwe <- tapply(activ2we$steps, activ2we$interval2, mean,  na.rm = TRUE) 
+```
+
+d) create a new dataset with x and y variables, x being the "time interval" created in Part 3, and y being 'weekend average steps per interval' and 'weekday average steps per interval'
+
+```{r, echo=TRUE}
+data2<- data.frame(timeinterval, stepsinterwd, stepsinterwe )
+
+par(mfrow= c(2,1), mar=c(4,4,2,1))
+plot(data2$timeinterval, data2$stepsinterwd, type="l", main="Daily Activity Pattern on Average - Weekdays", xlab="day-time", cex.main=0.7)
+plot(data2$timeinterval, data2$stepsinterwe, type="l", main="Daily Activity Pattern on Average - Weekends", xlab="day-time", cex.main=0.7)
+
+data2[data2[,2]==max(data2[,2]),1]  #weekday
+data2[data2[,3]==max(data2[,3]),1]  #weekend
+```
+
+As can be observed from the two plots the patten of activity was different in weekends compared with weekdays.  In weekends, the activity was higher between 9am and 8pm, compared with weekdays.  The peak activity, i.e. the 5-minute interval that on average contained the maximum number of steps is 9:15am on weekends, whereas it was 8:35am on weekdays.
+=======
