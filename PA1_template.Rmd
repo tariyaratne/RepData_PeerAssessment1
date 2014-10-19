@@ -43,6 +43,10 @@ tail(total)
 b) Make a histogram of the total number of steps taken each day
 ```{r, echo=TRUE}
 hist(total, main="Histogram of total steps", xlab="Total per day")
+#Copy the plot to a PNG file
+dev.copy(png, file="Total Steps.png")
+dev.off()
+
 ```
 
 c) Look at the six-point summary statistics of the 'total' vector
@@ -77,6 +81,9 @@ data<- data.frame(timeinterval, stepsinter)
 head(data)
 tail(data)
 plot(data$timeinterval, data$stepsinter, type="l", main="Daily Activity Pattern on Average", xlab="day-time")
+#Copy the plot to a PNG file
+dev.copy(png, file="Daily Activity Pattern.png")
+dev.off()
 data[data[,2]==max(data[,2]),]
 ```
 
@@ -111,7 +118,9 @@ total2<-tapply(activ2$steps, activ2$date,sum,  na.rm = TRUE)
 par(mfrow= c(1,2), mar=c(4,4,2,1))
 hist(total, main="Histogram of total steps (with missing values)", xlab="Total per day", cex.main=0.70)
 hist(total2, main="Histogram of total steps (missing values imputed)", xlab="Total per day", cex.main=0.70)
-
+#Copy the plot to a PNG file
+dev.copy(png, file="Histogram - Total Steps - Missing Values Imputed.png")
+dev.off()
 summary(total)
 summary(total2)
 ```
@@ -167,6 +176,9 @@ data2<- data.frame(timeinterval, stepsinterwd, stepsinterwe )
 par(mfrow= c(2,1), mar=c(4,4,2,1))
 plot(data2$timeinterval, data2$stepsinterwd, type="l", main="Daily Activity Pattern on Average - Weekdays", xlab="day-time", cex.main=0.7)
 plot(data2$timeinterval, data2$stepsinterwe, type="l", main="Daily Activity Pattern on Average - Weekends", xlab="day-time", cex.main=0.7)
+#Copy the plot to a PNG file
+dev.copy(png, file="Daily Activity Pattern - Weeday vs. Weekend.png")
+dev.off()
 
 data2[data2[,2]==max(data2[,2]),1]  #weekday
 data2[data2[,3]==max(data2[,3]),1]  #weekend
